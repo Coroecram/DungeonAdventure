@@ -489,33 +489,6 @@ puts
 	end
 end
 
-def skip_intro
-	while true
-		puts "What is your name?".chomp
-		traveler = gets
-		if traveler == "\n"
-			puts "Come on, everyone has a name..."
-		else
-			@traveler = traveler.chomp.split[0]
-			break
-		end
-	end
-	@room_place = 2
-	room_items
-	find_room(2).doors.replace([1,0,0,0])
-	@in_room.delete("lit")
-	@in_room.delete("torch")
-	@in_room.push("litlamp")
-	@in_hand.push("torch")
-	light_torch
-	@in_bag.push("book")
-	while true
-		input = gets
-		@input = input.chomp.downcase
-		inputs(@input)
-	end
-end
-
 
 def inputs(string)
 	if string == "pet cat"
@@ -1446,4 +1419,11 @@ end
 end
 
 my_adventure = Adventure.new
+	
+	
+	
+
+
+#my_adventure.light_command(:torch)
+#my_adventure.light_command(:torch)
 my_adventure.intro
