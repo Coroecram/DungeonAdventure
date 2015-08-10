@@ -1419,11 +1419,4 @@ end
 end
 
 my_adventure = Adventure.new
-	
-	
-	
-
-
-#my_adventure.light_command(:torch)
-#my_adventure.light_command(:torch)
 my_adventure.intro
