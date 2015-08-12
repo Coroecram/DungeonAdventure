@@ -1,0 +1,91 @@
+class Adventure
+
+def initialize()
+	@objects = []
+	@traveler = ""
+end
+
+def intro()
+	puts "Hello traveler? What is your name?".chomp
+	traveler = gets
+	@traveler = traveler.chomp
+	puts "You have been adventuring deep into the forest, #{@traveler},\n"
+	puts "when you come across the mouth of a foreboding cave.\n"
+	puts "In front of the cave there is a worn leather-bound book.\n"
+	puts "Please type 'take book' to pick it up."
+		while true
+			input = gets
+			@input = input.chomp.downcase
+			if @input == 'take book'
+				puts "You picked up the book."
+				puts "Please type 'inspect book' to look inside"
+				input = gets
+				@input = input.chomp.downcase
+				while true
+					if @input == 'inspect book'
+						puts "You open the book and look on the first page"
+						inputs(@input)
+						break
+					else
+					puts "Please type 'inspect book' to look inside"
+					input = gets
+					@input = input.chomp.downcase
+					end
+				end
+				break
+			else
+				puts "Please type 'take book' to pick up the book."
+			end
+		end
+	end
+
+def inputs(string)
+	if string.class == String && string.split.length == 2
+		command = string.split[0]
+		object = string.split[1]
+		puts send(command)
+	else
+		puts "Please enter a proper command."
+	end
+end
+
+ def find_object(reference)
+    @objects.detect { |object| object.reference == reference }
+ end
+
+def add_object(reference, name, description)
+	@objects << Object.new(reference, name, description)
+end
+
+def inspect
+    @traveler + " You are in " + @description
+end		
+class Object
+    attr_accessor :reference, :name, :description
+
+    def initialize(reference, name, description)
+      @reference = reference
+      @name = name
+      @description = description
+    end
+	
+	def show
+		puts "Instance method show invoked for '#{self}'"
+	end  
+  
+	def to_s
+		"Item: #{@item_name}"
+	end
+
+end
+	
+
+		
+	
+end
+my_adventure = Adventure.new
+
+my_adventure.add_object(:book, "Leather-Bound Book", "the inside of the book").show
+
+
+#my_adventure.intro
