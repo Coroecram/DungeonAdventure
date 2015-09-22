@@ -515,7 +515,10 @@ def skip_intro
 		inputs(@input)
 	end
 end
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 
 def inputs(string)
 	if string == "pet cat"
