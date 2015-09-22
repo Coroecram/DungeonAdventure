@@ -24,7 +24,7 @@ def initialize()
 	@canteen_count = 3
 	@valid_move = Abbrev.abbrev(["left", "right", "forward", "backwards", "straight"])
 	@commands = Abbrev.abbrev(["take", "go", "grab", "put", "inspect", "place", "drop", "clean", "wipe", "move",  "light"]); @commands["p"] = "put"
-	@object_list = Abbrev.abbrev(["bag", "room", "hands", "book", "lamp", "litlamp", "torch", "tree", "branch", "cat", "hole", "keyboard", "chest", "disk", "fragment", "keypad", "platform", "computer", "monitor", "mouse", "canteen", "matchbox", "ghost", "cord", "littorch"]); @object_list["h"]= "hands"; @object_list["fl"] = "disk"; @object_list["flo"] = "disk"; @object_list["flop"] = "disk"; @object_list["flopp"] = "disk"; @object_list["floppy"] = "disk"
+	@object_list = Abbrev.abbrev(["bag", "room", "hands", "book", "lamp", "litlamp", "torch", "tree", "branch", "cat", "hole", "keyboard", "chest", "disk", "fragment", "keypad" "platform", "computer", "monitor", "mouse", "canteen", "matchbox", "ghost", "cord", "littorch"]); @object_list["h"]= "hands"; @object_list["fl"] = "disk"; @object_list["flo"] = "disk"; @object_list["flop"] = "disk"; @object_list["flopp"] = "disk"; @object_list["floppy"] = "disk"
 	@mouse_in_hole = 1
 	@chest_opener = 0
 	@platform_fixed = 0
@@ -112,6 +112,7 @@ puts
 			break
 		end
 	end
+
 	puts "You have been adventuring deep into the forest, #{@traveler}.\n".center(80)
 	puts "When your way is blocked by a steep stone outcropping\n".center(80)
 	puts "At the foot of the outcropping there is a worn leather-bound book.\n".center(80)
@@ -535,10 +536,6 @@ def skip_intro
 		inputs(@input)
 	end
 end
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
 
 def inputs(string)
 	if string == "pet cat"
@@ -748,7 +745,7 @@ def inspect_command(object)
 			lit_torch_inspect
 		elsif object == :lamp
 			inspect_command(:litlamp)
-		elsif object == :keypad && @room_place == 9 && @chest_opener == 0
+		elsif object == :keypad  && @room_place == 9 && @chest_opener == 0
 			inspect_keypad
 		else
 			puts "That item is not around."
@@ -770,7 +767,7 @@ def put_command(object)
 			puts "You don't have that to put."
 		end
 	else
-		if @room_place == 19 && (object == :keyboard || object == :disk || object == :mouse || object == :fragment )
+		if @room_place == 19 && (object == :keyboard || object == :disk || object == :mouse)
 			put_final_room(object)
 		elsif @in_hands.any?{ |word| word.to_sym == object}
 			puts "You drop the #{object} in the room."
@@ -866,6 +863,7 @@ def lit_torch_inspect
 		identity = word[/\d+/]
 			if identity == nil
 			else
+				p identity
 				found_torch = find_torch(identity.to_i)
 				puts "#{found_torch.description} in the room will burn for #{found_torch.timeleft} moves."
 				identity = nil
@@ -1165,8 +1163,6 @@ def inspect_book
 	puts "Branches can be taken as torches.".center(80)
 	puts "Do not use descriptors except for a 'lit' torch or lamp.".center(80)
 	puts "Unique abbreviations are acceptable.".center(80)
-	puts "Again, don't forget torches burn out, it is not safe to be lost in the dark!".center(80)
-	puts "Check how long your lit torches will last frequently!".center(80)
 	puts "____________________________________________________________________________".center(80)
 	puts "Afraid to read on, you close the book."
 end
@@ -1207,7 +1203,7 @@ def inspect_platform
 		puts "IF YO                          F THIS DUNGEON,".center(80)
 		puts "YOU MIG                              HAHAHA!".center(80)
 		puts "THE PASSWORD         ".center(45)
-		puts "T                     SCURRIES INSIDE.".center(80)
+		puts "T                     SCURRIES INSIDE".center(80)
 		puts "GHOSTS                         VELY!".center(80)
 	else
 		puts "There is a platform carved out of a rock big enough to put the computer on."
@@ -1217,8 +1213,8 @@ def inspect_platform
 		puts "WELCOME #{traveler} YOU HAVE COME A LONG WAY".center(80)
 		puts "IF YOU CAN SOLVE THE PUZZLES OF THIS DUNGEON,".center(80)
 		puts "YOU MIGHT JUST ESCAPE... OR NOT. MUAHAHAHAHA!".center(80)
-		puts "THE PASSWORD IS 'QWERTY'!".center(80)
-		puts "THE CAT WILL FIND WHAT SCURRIES INSIDE.".center(80)
+		puts "THE PASSWORD IS 'QWERTY'!".center.(80)
+		puts "THE CAT WILL FIND WHAT SCURRIES INSIDE".center(80)
 		puts "GHOSTS FEAR THOSE WHO STAND BRAVELY!".center(80)
 	end
 end
@@ -1333,10 +1329,6 @@ def put_final_room(object)
 		@in_hands.delete("disk")
 		@disk_inserted = 1
 		find_object(:computer).description = "An old computer with a floppy disk in it. It is still running"
-	elsif object == :fragment
-		puts "You walk over to the platform and put in the fragment."
-		@in_hands.delete("fragment")
-		@platform_fixed = 1
 	end
 end
 
@@ -1531,5 +1523,6 @@ my_adventure = Adventure.new
 	
 
 
-my_adventure.intro
-#my_adventure.skip_intro
+#my_adventure.light_command(:torch)
+#my_adventure.light_command(:torch)
+my_adventure.skip_intro

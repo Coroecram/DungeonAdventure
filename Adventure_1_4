@@ -1,0 +1,295 @@
+class Adventure
+
+def initialize()
+	
+	@objects = []
+	@rooms = []
+	@traveler = ""
+	@orientation = "N"
+	@in_bag = []
+	@in_hands = []
+	@in_room = []
+	@scope_bag = 0
+	@scope_hands = 0
+	@scope_room = 0
+
+end
+
+def intro()
+
+
+#in_hand
+inputs('take torch')
+inputs('take lamp')
+#p find_object(:torch).name
+inputs('inspect book')
+#inputs('inspect lamp')
+#in_hand
+	while true
+		puts "What is your name?".chomp
+		traveler = gets
+		if traveler == "\n"
+			puts "Come on, everyone has a name..."
+		else
+			@traveler = traveler.chomp.split[0]
+			break
+		end
+	end
+	puts "You have been adventuring deep into the forest, #{@traveler}.\n".center(80)
+	puts "When you come across the mouth of a foreboding cave.\n".center(80)
+	puts "In front of the cave there is a worn leather-bound book.\n".center(80)
+
+		while true
+		puts "Please type 'take book' to pick it up."
+			input = gets
+			@input = input.chomp.downcase
+			if @input == 'take book'
+				puts "You picked up the book."
+				@in_hands.push(find_object(:book))
+				while true
+					puts "Please type 'inspect book' to look inside"
+					input = gets
+					@input = input.chomp.downcase
+					if @input == 'inspect book'
+						puts "You open the book and look on the first page"
+						inputs(@input)
+						break
+					end
+				end
+				break
+			end
+		end
+	puts "The book is magic, there's no use denying it.\n"
+		while true
+			puts "Might as well inspect your bag, no?\n"
+				input = gets
+				@input = input.chomp.downcase
+				if @input == 'inspect bag'
+					inputs(@input)
+					break
+				end
+		end
+	end
+
+	while true
+		puts "enter command #{@traveler}"
+		input = gets
+		@input = input.chomp.downcase
+		inputs(@input)	
+end
+
+def inputs(string)
+	if string.class == String && string.split.length == 2
+		command = string.split[0]
+		@subject = string.split[1].to_sym
+		command_parse(command)
+	else
+		puts "Please enter a proper command."
+	end
+end
+
+def command_parse(inquiry)
+	if inquiry == "take" || inquiry == "grab" || inquiry == "pickup"
+		take_command(@subject)
+	elsif inquiry == "inspect"
+		inspect_command(@subject)
+	elsif inquiry == "put" || inquiry == "place" || inquiry == "drop"
+		put_command(@subject)
+	elsif inquiry == "clean" || inquiry == "wipe" || inquiry == "dust"
+			clean_command(@subject)
+	elsif inquiry == "move" || inquiry == "go"
+		move_command(@subject)
+	elsif inquiry == "light"
+		light_command(@subject)	
+	end
+end
+
+def clean_command(object)
+	puts "you clean the #{object}"
+end
+
+def take_command(object)
+	if @in_hands.length <= 2 
+		@in_hands.push(object)
+	else
+		puts "Your hands are full"
+	end
+end
+
+def inspect_command(object)
+	reference = object.to_sym
+	if object == :bag
+		in_bag
+	elsif object == :hands || object == :hand;
+		in_hand
+	elsif object == :room
+		in_room
+	elsif object == :book
+		inspect_book
+	elsif @scope_bag == 1
+		if @in_bag.any?{ |word| word == object}
+			puts "#{find_object(reference).description}"
+		else
+			puts "That item is not in your bag."
+		end
+	elsif @scope_hands == 1
+		if @in_hands.any?{ |word| word == object}
+			puts "#{find_object(reference).description}"
+		else
+			puts "That item is not in your hands"
+		end
+	elsif @scope_room == 1
+		if @in_room.any?{ |word| word == object }
+			puts "#{find_object(reference).description}"
+		else
+			puts "That item is not around."	
+		end	
+	end
+end
+
+def put_command(object)
+	if @in_hands.any?{ |word| word == object}
+		puts "you put the #{object}"
+	else
+		puts "you don't have that to put"
+	end
+end
+
+def light_command(object)
+	puts "you light the #{object}"
+end
+ 
+def move_command(object)
+	puts "you move #{object}"
+end
+
+def in_bag
+	@scope_bag = 1; @scope_hands = 0; @scope_room = 0
+end
+
+def in_hand
+	@scope_hands = 1; @scope_bag = 0; @scope_room = 0
+	@in_hands.each{ |object| puts find_object(object.to_sym).name}
+end
+
+def in_room
+	@scope_room = 1; @scope_bag = 0; @scope_hands = 0
+end
+
+
+def inspect_book
+	puts "Hello #{@traveler}, looking for some help?\n".center(80)
+	puts "Here's a list of some handy commands and a short description of what they do!\n".center(80)
+	puts "Type [command] [item or direction] and press ENTER".center(80)
+	puts "Command \t Description\n"
+	puts "move \t Move your character in [direction]\n"
+	puts "inspect  Inspect an [object]. Inspect your bag, room, or hands to manipulate items in it.\n"
+	puts "take \t Pick up an [item]\n"
+	puts "put \t Put down an [item]\n"
+	puts "light \t Light the [object] on fire (be careful!)\n"
+	puts "clean \t Some [items] are dirty\n\n"
+	puts "Here's a couple things not to forget #{@traveler}!\n".center(80)
+	puts "Don't forget torches burn out, it is not safe to be lost in the dark!".center(80)
+	puts "You can take and put [objects] in your bag right after inspecting it.".center(80)
+	puts "Afraid to read on, you close the book."
+	
+end
+
+class Object
+    attr_accessor :reference, :name, :description, :optional
+
+    def initialize(reference, name, description, optional = 0)
+      @name = name
+	  @reference = reference
+	  @description = description
+	  @optional = optional
+    end
+
+end
+
+class Room
+	attr_accessor :reference, :description, :doors, :objects
+	
+    def initialize(reference, description, doors, *objects)
+		@room = {:reference=>reference,:description=>description,:doors=>doors,:objects=>objects}
+    end
+end
+
+def add_room(reference, description, doors, objects)
+	@rooms << Room.new(reference, description, doors, objects)
+end
+
+def add_object(reference, name, description, optional = 0)
+	@objects << Object.new(reference, name, description, optional)
+end
+
+ def find_object(reference)
+    @objects.detect { |object| object.reference == reference }
+ end
+ 
+  def find_bag(reference)
+    @in_bag.detect { |object| object.reference == reference }
+ end
+ 
+def find_hands(reference)
+   @in_hands.detect { |object| object.reference == reference }
+end
+
+def find_room(reference)
+	@in_hands.detect { |object| object.reference == reference }
+end
+	
+end
+
+my_adventure = Adventure.new
+
+#adding objects
+	my_adventure.add_object(:book, "A Leather-Bound Book", "A black leather-bound book with a certain feel. There are no markings on it.")
+	my_adventure.add_object(:lamp2, "A lamp Post", "A slender black metal lamp post about 6 feet tall in the middle of the room.")
+	my_adventure.add_object(:lamp5, "A lamp Post", "A slender black metal lamp post about 6 feet tall in the middle of the room.")
+	my_adventure.add_object(:lamp15, "A lamp Post", "A slender black metal lamp post about 6 feet tall in the middle of the room.")
+	my_adventure.add_object(:lamp19, "A lamp Post", "A slender black metal lamp post about 6 feet tall in the middle of the room.")
+	my_adventure.add_object(:torch, "An Unlit Torch", "A piece of wood with flammable resin inside.\nIt can be lit to provide a bright flame.")
+	my_adventure.add_object(:lit_torch, "A flaming wooden torch", "By the looks of it, your torch will burn for x more movements", 10)
+	my_adventure.add_object(:tree, "A large dead tree", "There is a large dead tree with many branches that can be used as torches. Who knows how it got here")
+	my_adventure.add_object(:branch, "A tree branch", "The branch looks like it could be taken and used as a torch.")
+	my_adventure.add_object(:cat, "A stray cat", "It's a Siamese cat in the corner, looks friendly enough.")
+	my_adventure.add_object(:hole, "A small hole in the wall", ["There is a small hole in the wall.", "You can hear scurrying inside."], 1)
+	my_adventure.add_object(:keyboard, "A computer keyboard", "A standard QWERTY keyboard with numpad")
+	my_adventure.add_object(:chest, "A large wooden chest", ["There is a large wooden chest with a keypad on it. It is closed"])
+	my_adventure.add_object(:floppy, "A Floppy Disk", "An old-time floppy disk")
+	my_adventure.add_object(:tablet, "A stone tablet", "INSERT WHAT STONE TABLET SAYS")
+	my_adventure.add_object(:base, "A broken stone base", "INSERT WHAT STONE BASE SAYS")
+	my_adventure.add_object(:computer, "An old computer", "It's an old computer, still running.")
+	my_adventure.add_object(:monitor, "A computer monitor", "A computer monitor. It is too dusty to read")
+	my_adventure.add_object(:mouse, "A computer mouse", "A plain-old 2-button computer mouse.")
+	my_adventure.add_object(:bottle, "A water bottle", "A half-full reusable water bottle.")
+
+#adding rooms
+	my_adventure.add_room('0', "a dark room with a door to the", [0,0,0,1], "tablet")
+	my_adventure.add_room('1', "a dark room with a door to the", [0,1,1,0], nil)
+	my_adventure.add_room('2', "a dark room with a door to the", [1,0,1,0], "lamp, 2")
+	my_adventure.add_room('3', "a dark room with a door to the", [0,0,1,1], nil)
+	my_adventure.add_room('4', "a dark room with a door to the", [0,1,0,0], "hole")
+	my_adventure.add_room('5', "a dark room with a door to the", [0,0,1,1], "lamp, 5")
+	my_adventure.add_room('6', "a dark room with a door to the", [1,1,0,1], nil)
+	my_adventure.add_room('7', "a dark room with a door to the", [1,1,1,1], "tree")
+	my_adventure.add_room('8', "a dark room with a door to the", [1,1,0,0], nil)
+	my_adventure.add_room('9', "a dark room with a door to the", [0,0,1,0], "treasure chest, keyboard")
+	my_adventure.add_room('10', "a dark room with a door to the", [1,0,0,1], "cat")
+	my_adventure.add_room('11', "a dark room with a door to the", [0,1,0,1], nil)
+	my_adventure.add_room('12', "a dark room with a door to the", [1,1,1,1], nil)
+	my_adventure.add_room('13', "a dark room with a door to the", [0,1,1,1], nil)
+	my_adventure.add_room('14', "a dark room with a door to the", [1,1,0,0], nil)
+	my_adventure.add_room('15', "a dark room with a door to the", [0,0,0,1], "ghost, lamp, 15")
+	my_adventure.add_room('16', "a dark room with a door to the", [0,1,0,1], nil)
+	my_adventure.add_room('17', "a dark room with a door to the", [1,1,0,0], nil)
+	my_adventure.add_room('18', "a dark room with a door to the", [1,0,0,1], nil)
+	my_adventure.add_room('19', "a dark room with a door to the", [0,1,0,0], "computer, monitor, lamp, tablet_base, 19")
+	
+	
+	
+
+
+
+my_adventure.intro

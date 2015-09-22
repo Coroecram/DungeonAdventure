@@ -2,15 +2,13 @@ class Adventure
 
 def initialize()
 	
-	require 'abbrev'
-	require 'pp'
 	require 'timeout'
 	@objects = []
 	@rooms = []
 	@traveler = ""
 	@orientation = 0
-	@room_place = 'forest'
-	@in_bag = ["canteen", "matchbox"]
+	@room_place = "forest"
+	@in_bag = ["bottle", "matchbox"]
 	@in_hands = []
 	@in_room = []
 	@scope_bag = 0
@@ -19,21 +17,16 @@ def initialize()
 	@fail_count = 0
 	@torch_identifier = 0
 	@lit_torches = []
-	@darkness_tries = 1
-	@in_darkness = 0
-	@canteen_count = 3
-	@valid_move = Abbrev.abbrev(["left", "right", "forward", "backwards", "straight"])
-	@commands = Abbrev.abbrev(["take", "go", "grab", "put", "inspect", "place", "drop", "clean", "wipe", "move",  "light"]); @commands["p"] = "put"
-	@object_list = Abbrev.abbrev(["bag", "room", "hands", "book", "lamp", "litlamp", "torch", "tree", "branch", "cat", "hole", "keyboard", "chest", "disk", "fragment", "keypad", "platform", "computer", "monitor", "mouse", "canteen", "matchbox", "ghost", "cord", "littorch"]); @object_list["h"]= "hands"; @object_list["fl"] = "disk"; @object_list["flo"] = "disk"; @object_list["flop"] = "disk"; @object_list["flopp"] = "disk"; @object_list["floppy"] = "disk"
+	@bottle_count = 3
+	@valid_move = ["left", "right", "forward", "backward", "straight", "back", "f", "l", "r", "b"]
 	@mouse_in_hole = 1
 	@chest_opener = 0
-	@platform_fixed = 0
+	@dais_fixed = 0
 	@clean_monitor = 0
 	@keyboard_connected = 0
 	@mouse_connected = 0
 	@disk_inserted = 0
-	@error_count = 0
-	@cant_take = [:lamp, :litlamp, :computer, :monitor, :platform, :tree]
+	@cant_take = [:lamp, :litlamp, :computer, :monitor, :dais, :tree]
 
 	#adding objects
 	add_object(:book, "a magical book", "A black leather-bound book with a certain feel. There are no markings on it.\nYou open to the first page.")
@@ -48,11 +41,11 @@ def initialize()
 	add_object(:chest, "a large wooden treasure chest", "A large locked wooden chest with a keypad on it.")
 	add_object(:disk, "a floppy disk", "An old-time floppy disk")
 	add_object(:fragment, "a stone fragment", "A stone fragment with carving on it.")
-	add_object(:platform, "a stone platform", "a stone platform with a fragment missing and a computer on top.")
-	add_object(:computer, "a computer", "It's an old computer, still running, on top of the platform.")
+	add_object(:dais, "a stone dais", "a stone dais with a fragment missing and a computer on top.")
+	add_object(:computer, "a computer", "It's an old computer, still running, on top of the dais.")
 	add_object(:monitor, "a monitor", "A computer monitor on top of the computer. It is too dusty to read")
 	add_object(:mouse, "a mouse (computer)", "A plain-old 2-button computer mouse.")
-	add_object(:canteen, "a canteen", "A half-full reusable water canteen.")
+	add_object(:bottle, "a bottle", "A half-full reusable water bottle.")
 	add_object(:matchbox, "a matchbox", "A strike-on-box with so many matches you can't run out.")
 	add_object(:ghost, "a spooky ghost", "A terrifying ghost moaning and staring right at you!")
 	add_object(:cord, "a cord coming out of the hole", "A cord is sticking out of the mouse hole.")
@@ -79,13 +72,12 @@ def initialize()
 	add_room(16, "a dark room with a door to the", [0,1,0,1], nil)
 	add_room(17, "a dark room with a door to the", [0,0,1,1], nil)
 	add_room(18, "a dark room with a door to the", [0,1,1,0], nil)
-	add_room(19, "a dark room with a door to the", [0,0,0,1], "computer", "monitor", "lamp", "platform")
+	add_room(19, "a dark room with a door to the", [0,0,0,1], "computer", "monitor", "lamp", "dais")
 
 end
 
 def intro()
 room_items
-
 puts " ______            _        _______  _______  _______  _       ".center(70)
 puts "(  __  \\ |\\     /|( (    /|(  ____ \\(  ____ \\(  ___  )( (    /|".center(70)
 puts "| (  \\  )| )   ( ||  \\  ( || (    \\/| (    \\/| (   ) ||  \\  ( |".center(70)
@@ -120,20 +112,15 @@ puts
 		puts "Enter 'take book' to pick it up, if you dare."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == 'take book'
-			puts "You take the book from the forest floor, it has an unearthly feel..."
-				@in_hands.push("book"); @in_room.delete("book") ; fails = 0
-				puts "Press <ENTER> to proceed."
-				gets				
+				inputs(@input)
 				while true
 					puts "To have a look inside, enter the command 'inspect book'"
 					input = gets
 					@input = input.chomp.downcase
-					@input = abbrev_check(@input)
 					if @input == 'inspect book'
 						puts "You open the book and look on the first page"
-						inspect_book; fails = 0
+						inputs(@input) ; fails = 0
 						puts "Press <ENTER> to proceed."
 						gets
 						break
@@ -147,11 +134,13 @@ puts
 				end
 				break
 			elsif fails == 2
-				abort
+				puts "*cough* 'take book' *cough*"
+				fails = 0
 			else
 				fails += 1
 			end
 		end
+	fails = 0
 	puts
 	puts "The book is magic, there's no use denying it.\n"
 	puts "You've brought your bag along with you to keep something like this.\n"
@@ -161,7 +150,6 @@ puts
 			puts "To open your bag you have to inspect it."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 				if @input == 'inspect bag'
 					inputs(@input); fails = 0
 						puts "Press <ENTER> to proceed."
@@ -178,14 +166,13 @@ puts
 		puts "Inspect something in your bag."
 		input = gets
 		@input = input.chomp.downcase
-		@input = abbrev_check(@input)
-			if @input == "inspect canteen" || @input == "inspect matchbox"
+			if @input == "inspect bottle" || @input == "inspect matchbox"
 				inputs(@input) ; fails = 0
 				puts "Press <ENTER> to proceed."
 				gets
 			break
 			elsif fails == 2
-				puts "*cough* 'inspect canteen or matchbook' *cough*"
+				puts "*cough* 'inspect bottle or matchbook' *cough*"
 				fails = 0
 			else
 				fails += 1
@@ -195,7 +182,6 @@ puts
 		puts "Very interesting, now look at what you have in your hands."
 		input = gets
 		@input = input.chomp.downcase
-		@input = abbrev_check(@input)
 			if @input == "inspect hands" || @input == "inspect hand"
 				inputs(@input); fails = 0
 				puts "Press <ENTER> to proceed."
@@ -208,18 +194,17 @@ puts
 				fails += 1
 			end
 		end
-		puts "Now try to inspect the canteen or matchbox in your bag again."
+		puts "Now try to inspect the bottle or matchbox in your bag again."
 		while true
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect bag"
 				inputs(@input) ; fails = 0
 				puts
 				puts "Press <ENTER> to proceed."
 				gets
 				break
-			elsif @input == "inspect canteen" || @input == "inspect matchbox"
+			elsif @input == "inspect bottle" || @input == "inspect matchbox"
 				inputs(@input)
 				puts
 				puts "Odd? No. You closed the bag to look in your hands.\nInspect your bag then see what's in there."
@@ -238,8 +223,7 @@ puts
 			puts "Good, now inspect an item in your bag."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
-			if @input == "inspect canteen" || @input == "inspect matchbox"
+			if @input == "inspect bottle" || @input == "inspect matchbox"
 				inputs(@input) ; fails = 0
 				puts "Press <ENTER> to proceed."
 				gets
@@ -248,7 +232,7 @@ puts
 				inputs(@input)
 				puts
 			elsif fails == 2
-				puts "*cough* 'inspect canteen or matchbook' *cough*"
+				puts "*cough* 'inspect bottle or matchbook' *cough*"
 				fails = 0
 			else
 				fails += 1
@@ -263,7 +247,6 @@ puts
 			puts "Now, put the magic book in the bag."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "put book" || @input == "place book" || @input == "drop book"
 				inputs(@input); fails = 0
 				break
@@ -281,7 +264,6 @@ puts
 		puts "Great, now look in the bag again to check it out."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect bag"
 				inputs(@input); fails = 0
 				puts "Press <ENTER> to proceed."
@@ -298,7 +280,6 @@ puts
 		puts "Cool! Now check out what is in your hands."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect hand" || @input == "inspect hands"
 				inputs(@input); fails = 0
 				puts "Press <ENTER> to proceed."
@@ -316,7 +297,6 @@ puts
 		puts "And now check out the book."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect book"
 				inputs(@input) ; fails = 0
 				puts "Press <ENTER> to proceed."
@@ -332,7 +312,7 @@ puts
 		end
 		puts
 		puts "I know what you're thinking, but the book is still in the bag." 
-		sleep 3
+		sleep 5
 		puts "The book really is magic! (you can check it out for help anytime)"	
 		puts "Press <ENTER> to proceed."
 		gets
@@ -340,7 +320,6 @@ puts
 		puts "-/\\/\\/\\/\\/\\/\\/\\/\\-RUMBLE-/\\/\\/\\/\\/\\/\\/\\/\\-RUMBLE-/\\/\\/\\/\\/\\/\\/\\/\\-".center(80)
 		puts "What's that noise?"
 		sleep 5
-		puts
 		puts "-/\\/\\/\\/\\/\\/\\/\\/\\--/\\/\\/\\/\\/\\/\\/\\/\\-RUMBLE-/\\/\\/\\/\\/\\/\\/\\/\\--/\\/\\/\\/\\/\\/\\/\\/\\-".center(80)	
 		sleep 3
 		puts "Holy New Horizons! The rock wall in front of you just opened up!"
@@ -353,7 +332,6 @@ puts
 		while true
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect wall"
 				puts "There's a small opening in front of you where a solid rock wall used to be." ; fails = 0
 				puts "Press <ENTER> to proceed."
@@ -375,7 +353,6 @@ puts
 		puts "Let's go inside! Come on!"
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "go forward" || @input == "move forward" || @input == "go straight" || @input == "move straight" || @input == "go inside"
 				puts "You step cautiously into the newly formed opening..."
 				fails = 0
@@ -395,7 +372,6 @@ puts
 		puts "The cave chamber is large and mostly vacant, inspect the room for yourself."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect room"
 				inputs(@input); fails = 0
 				break
@@ -412,7 +388,6 @@ puts
 		puts "A torch... that might come in handy. Pick it up."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "take torch" || @input == "grab torch"
 				inputs(@input) ; fails = 0
 				break
@@ -426,10 +401,9 @@ puts
 	puts "Press <ENTER> to proceed."
 	gets
 		while true
-		puts "Ok, now let's light it up."
+		puts "Ok, now let's light it up. Remember that matchbox you had in your bag?"
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "inspect bag"
 				inputs(@input) ; fails = 0
 				break
@@ -440,11 +414,12 @@ puts
 				fails+=1
 			end
 		end
+	puts "Press <ENTER> to proceed."
+	gets
 		while true
-		puts "Take out something to light the torch."
+		puts "Take out the matchbox."
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "take matchbox" || @input == "grab matchbox"
 				inputs(@input) ; fails = 0
 				break
@@ -455,11 +430,12 @@ puts
 				fails+=1
 			end
 		end
+	puts "Press <ENTER> to proceed."
+	gets
 		while true
 		puts "Great! Now you can light the torch!"
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			if @input == "light torch" || @input == "light torch"
 				inputs(@input) ; fails = 0
 				break
@@ -470,11 +446,12 @@ puts
 				fails+=1
 			end
 		end
+	puts "Press <ENTER> to proceed."
+	gets
 		puts "Fire on a stick! Awesome! Light the lamp yourself now..."
 		while true
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
 			inputs(@input) ; fails = 0
 			if @in_room.any? { |item| item == "litlamp" }
 				puts "Great job! You got it now!"
@@ -496,7 +473,7 @@ puts
 	sleep 3
 	puts
 	puts "-/\\/\\/\\/\\/\\/\\/\\/\\--/\\/\\/\\/\\/\\/\\/\\/\\-RUMBLE-/\\/\\/\\/\\/\\/\\/\\/\\--/\\/\\/\\/\\/\\/\\/\\/\\-".center(80)
-	sleep 1
+	sleep 11
 	puts "Maybe I'll see you again #{@traveler}! Best of luck to ya!"
 	sleep 3
 	puts "The doorway behind you closes... you are trapped in this dungeon."
@@ -508,46 +485,10 @@ puts
 	end
 end
 
-def skip_intro
-	while true
-		puts "What is your name?".chomp
-		traveler = gets
-		if traveler == "\n"
-			puts "Come on, everyone has a name..."
-		else
-			@traveler = traveler.chomp.split[0]
-			break
-		end
-	end
-	@room_place = 2
-	room_items
-	find_room(2).doors.replace([1,0,0,0])
-	@in_room.delete("lit")
-	@in_room.delete("lamp")
-	@in_room.push("litlamp")
-	@in_room.delete("torch")
-	@in_hands.push("torch")
-	light_torch
-	@in_bag.push("book")
-	while true
-		input = gets
-		@input = input.chomp.downcase
-		inputs(@input)
-	end
-end
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
 
 def inputs(string)
-	if string == "pet cat"
-		pet_cat
-	elsif string =~(/.+lit torch/) || string =~(/.+littorch/)
+	if string =~(/.+lit torch/) || string =~(/.+littorch/)
 		command = string.split[0]
-		if @commands.any?  {|k, v| k == command}
-			command = @commands[command]
-		end
 		@subject = "littorch".to_sym
 		torch_parse(command)
 	elsif string =~(/.+lit lamp/) || string =~(/.+litlamp/)
@@ -556,62 +497,43 @@ def inputs(string)
 		command_parse(command)
 	elsif string.class == String && string.split.length == 2
 		command = string.split[0]
-		@subject = string.split[1]
+		@subject = string.split[1].to_sym
 		command_parse(command)
 	else
-		puts "Please enter a valid command."
-		puts "[action] [object]"
+		puts "Please enter a proper command."
 	end
 end
 
 def command_parse(inquiry)
-	if @commands.any?  {|k, v| k == inquiry}
-		inquiry = @commands[inquiry]
-		if inquiry == "move" || inquiry == "go"
-			move_command(@subject.to_s)
-		elsif @object_list.any?  {|k, v| k == @subject}
-			@subject = @object_list[@subject].to_sym
-			@error_count = 0
-			if inquiry == "take" || inquiry == "grab"
-				take_command(@subject)
-			elsif inquiry == "inspect"
-				inspect_command(@subject)
-			elsif inquiry == "put" || inquiry == "place" || inquiry == "drop"
-				put_command(@subject)
-			elsif inquiry == "clean" || inquiry == "wipe" 
-					clean_command(@subject)
-			elsif inquiry == "light"
-				light_command(@subject)
-			end
-		else 
-			if @error_count < 1
-				puts "Please enter a valid object. (#{inquiry} what?)"
-				@error_count += 1
-				@subject = gets.downcase.chomp
-				command_parse(inquiry)
-			else
-				puts "Please enter a valid command."
-				@error_count = 0
-			end
-		end
+	if inquiry == "take" || inquiry == "grab" || inquiry == "pickup"
+		take_command(@subject)
+	elsif inquiry == "inspect"
+		inspect_command(@subject)
+	elsif inquiry == "put" || inquiry == "place" || inquiry == "drop"
+		put_command(@subject)
+	elsif inquiry == "clean" || inquiry == "wipe" || inquiry == "dust"
+			clean_command(@subject)
+	elsif inquiry == "move" || inquiry == "go"
+		move_command(@subject.to_s)
+	elsif inquiry == "light"
+		light_command(@subject)	
 	else
 		puts "That is not something you can do."
-		puts "Please enter a valid command"
 	end
 end
 
 def clean_command(object)
 	if object == :bag
 		puts "You dust off your bag."
-	elsif object == :hands
+	elsif object == :hands || object == :hand;
 		@scope_bag = 0; @scope_hands = 1; @scope_room = 0
-		if @in_hands.any?{ |word| word == "canteen"} && @in_hands.length == 1 && @canteen_count > 0
-			puts "You wash off your hands with the water from the canteen."
-			@canteen_count -= 1
-				if @canteen_count == 0
-					find_object(:canteen).description = "An empty reusable water canteen."
+		if @in_hands.any?{ |word| word == "bottle"} && @in_hands.length == 1 && @bottle_count > 0
+			puts "You wash off your hands with the water from the bottle."
+			@bottle_count -= 1
+				if @bottle_count == 0
+					find_object(:bottle).description = "An empty reusable water bottle."
 				end
-		elsif @in_hands.any?{ |word| word == "canteen"} && @in_hands.length == 1 && @canteen_count == 0
+		elsif @in_hands.any?{ |word| word == "bottle"} && @in_hands.length == 1 && @bottle_count == 0
 			puts "There is no more water to clean your hands."
 		elsif @in_hands.length == 2
 			puts "Your hands are full."
@@ -665,7 +587,7 @@ def take_command(object)
 	if @in_hands.length == 2
 		puts "Your hands are full."
 	elsif @room_place == 7 && object == :branch
-		puts "You take a branch off the tree and it is now a torch."
+		puts "You take a branch off the tree as a torch."
 		@in_hands.push("torch")
 	elsif @scope_bag == 1
 		if @in_bag.any?{ |word| word.to_sym == object}
@@ -691,8 +613,6 @@ def take_command(object)
 				@in_room.delete(object.to_s)
 				@in_hands.push(object.to_s)
 			end
-		elsif object == :torch
-				lit_torch_grab
 		else
 			puts "It isn't in the room to take."
 		end
@@ -704,7 +624,7 @@ end
 def inspect_command(object)
 	if object == :bag
 		in_bag
-	elsif object == :hands
+	elsif object == :hands || object == :hand;
 		in_hand
 	elsif object == :room
 		in_room
@@ -735,8 +655,8 @@ def inspect_command(object)
 		end
 	elsif @scope_room == 1
 		if @in_room.any?{ |word| (word[/\D+/]).to_sym == object }
-			if object == :platform
-				inspect_platform
+			if object == :dais
+				inspect_dais
 			elsif object == :monitor
 				inspect_monitor
 			else
@@ -748,7 +668,7 @@ def inspect_command(object)
 			lit_torch_inspect
 		elsif object == :lamp
 			inspect_command(:litlamp)
-		elsif object == :keypad && @room_place == 9 && @chest_opener == 0
+		elsif object == :keypad  && @room_place == 9 && @chest_opener == 0
 			inspect_keypad
 		else
 			puts "That item is not around."
@@ -770,12 +690,13 @@ def put_command(object)
 			puts "You don't have that to put."
 		end
 	else
-		if @room_place == 19 && (object == :keyboard || object == :disk || object == :mouse || object == :fragment )
+		if @room_place == 19 && (object == :keyboard || object == :disk || object == :mouse)
 			put_final_room(object)
 		elsif @in_hands.any?{ |word| word.to_sym == object}
 			puts "You drop the #{object} in the room."
 			@in_hands.delete(object.to_s)
 			@in_room.push(object.to_s)
+			p @in_room
 			if object == :cat
 				cat_room_check
 			end
@@ -866,6 +787,7 @@ def lit_torch_inspect
 		identity = word[/\d+/]
 			if identity == nil
 			else
+				p identity
 				found_torch = find_torch(identity.to_i)
 				puts "#{found_torch.description} in the room will burn for #{found_torch.timeleft} moves."
 				identity = nil
@@ -873,7 +795,7 @@ def lit_torch_inspect
 			end
 		end
 	else
-		puts "There is no torch to inspect."
+		puts "There is no lit torch."
 	end
 end
 
@@ -896,7 +818,7 @@ burntime = 11
 		@in_room.delete(torch_to_grab)
 		@in_hands.push(torch_to_grab)	
 	else
-		puts "There is no torch here to take."
+		puts "There is no lit torch here to take."
 	end
 end
 
@@ -912,14 +834,14 @@ burntime = 11
 				elsif find_torch(identifier).timeleft < burntime
 					burntime = find_torch(identifier).timeleft
 					torch_to_put = object
+					puts "You drop the oldest burning torch on the ground."
 				end
 			end
 		end
 		@in_hands.delete(torch_to_put)
-		@in_room.push(torch_to_put)
-		puts "You drop the oldest burning torch on the ground."
+		@in_room.push(torch_to_put)	
 	else
-		puts "You have no torch to put down."
+		puts "You have no lit torch to put down."
 	end
 end
  
@@ -928,11 +850,9 @@ def move_command(direction)
 		doors_in_room = current_room.doors
 		orientationer = @orientation
 		doors_orient = doors_in_room.rotate(orientationer)
-	if @valid_move.any?  {|k, v| k == direction}
-		direction = @valid_move[direction]
-		@error_count = 0
+	if @valid_move.any? { |index| direction == index}
 		items_room
-		if direction == "straight" || direction == "forward"
+		if direction == "straight" || direction == "forward" || direction == "f"
 			if doors_orient[0] == 1
 				puts "You move straight, into the next room."
 				orienteering
@@ -947,7 +867,7 @@ def move_command(direction)
 			else
 				puts "There is no way to go in that direction."
 			end
-		elsif direction == "backwards"
+		elsif direction == "back" || direction == "backwards" || direction == "b"
 			if doors_orient[2] == 1
 				puts "You move back, into the last room."
 				@orientation = (2 + @orientation) % 4
@@ -965,53 +885,9 @@ def move_command(direction)
 			end
 		end
 	else
-		if @error_count < 1
-			puts "Please enter a valid direction."
-			@error_count += 1
-			direction = gets.downcase.chomp
-			move_command(direction)
-		else
-			puts "Please enter a valid command."
-			@error_count = 0
-		end
+		puts "Please enter a valid direction."
 	end
 	turn_phase
-end
-
-def pet_cat
-	if @scope_bag == 1
-		if @in_bag.any?{ |word| (word == "cat")}
-			puts "You pet the cat."
-			sleep 2
-			puts "It purrs happily at your touch!"
-		elsif @in_hands.any?{ |word| (word == "cat")}
-			puts "You pet the cat."
-			sleep 2
-			puts "It purrs happily at your touch!"
-		else
-			puts "Please enter a valid command."
-		end
-	elsif @scope_hands == 1
-		if @in_hands.any?{ |word| (word == "cat")}
-			puts "You pet the cat."
-			sleep 2
-			puts "It purrs happily at your touch!"
-		else
-			puts "Please enter a valid command."
-		end
-	elsif @scope_room == 1
-		if @in_room.any?{ |word| (word == "cat")}
-			puts "You pet the cat."
-			sleep 2
-			puts "It purrs happily at your touch!"
-		elsif @in_hands.any?{ |word| (word == "cat")}
-			puts "You pet the cat."
-			sleep 2
-			puts "It purrs happily at your touch!"
-		else
-			puts "Please enter a valid command."
-		end
-	end
 end
 
 def orienteering
@@ -1085,7 +961,7 @@ end
 
 def in_bag
 	@scope_bag = 1; @scope_hands = 0; @scope_room = 0
-	if @in_bag.length == 0
+	if @in_bag == 0
 		puts "There is nothing in your bag."
 	else
 		things = []
@@ -1155,18 +1031,9 @@ def inspect_book
 	puts "put/place Put down an [item] in your hands."
 	puts "light \t  Light  the [object] on fire (be careful!)."
 	puts "clean \t  Some [items] are dirty.\n\n"
-	puts "____________________________________________________________________________".center(80)
-	puts "Press <ENTER> to look at the facing page."
-	gets
-	puts "____________________________________________________________________________".center(80)
-	puts "Here are some helpful tips #{@traveler}!".center(80)
-	puts "Don't forget torches burn out, it is not safe to be lost in the dark!".center(80)
+	puts "Don't forget torches burn out, it is not safe to be lost in the dark #{@traveler}!".center(80)
 	puts "You will always drop and pickup the most burnt torch first.".center(80)
-	puts "Branches can be taken as torches.".center(80)
-	puts "Do not use descriptors except for a 'lit' torch or lamp.".center(80)
-	puts "Unique abbreviations are acceptable.".center(80)
-	puts "Again, don't forget torches burn out, it is not safe to be lost in the dark!".center(80)
-	puts "Check how long your lit torches will last frequently!".center(80)
+	puts "Do not use descriptors except for a 'lit torch'.".center(80)
 	puts "____________________________________________________________________________".center(80)
 	puts "Afraid to read on, you close the book."
 end
@@ -1194,11 +1061,10 @@ def inspect_keypad
 	end
 end
 
-def inspect_platform
-	traveler = @traveler.upcase
+def inspect_dais
 	spaces = " " * ("#{@traveler} YOU HAVE COME A LO").length
-	if @platform_fixed == 0
-		puts "There is a platform carved out of a rock big enough to put the computer on."
+	if @dais_fixed == 0
+		puts "There is a dais carved out of a rock big enough to put the computer on."
 		puts "Something is carved into its base, but a whole section is missing."
 		puts "Press <ENTER> to read it."
 		gets
@@ -1207,26 +1073,25 @@ def inspect_platform
 		puts "IF YO                          F THIS DUNGEON,".center(80)
 		puts "YOU MIG                              HAHAHA!".center(80)
 		puts "THE PASSWORD         ".center(45)
-		puts "T                     SCURRIES INSIDE.".center(80)
+		puts "T                     SCURRIES INSIDE".center(80)
 		puts "GHOSTS                         VELY!".center(80)
 	else
-		puts "There is a platform carved out of a rock big enough to put the computer on."
+		puts "There is a dais carved out of a rock big enough to put the computer on."
 		puts "Something is carved into it's base and it says:"
 		puts "Press <ENTER> to read it."
 		gets
-		puts "WELCOME #{traveler} YOU HAVE COME A LONG WAY".center(80)
+		puts "WELCOME #{@traveler} YOU HAVE COME A LONG WAY".center(80)
 		puts "IF YOU CAN SOLVE THE PUZZLES OF THIS DUNGEON,".center(80)
 		puts "YOU MIGHT JUST ESCAPE... OR NOT. MUAHAHAHAHA!".center(80)
-		puts "THE PASSWORD IS 'QWERTY'!".center(80)
-		puts "THE CAT WILL FIND WHAT SCURRIES INSIDE.".center(80)
+		puts "THE PASSWORD IS 'QWERTY'!".center.(80)
+		puts "THE CAT WILL FIND WHAT SCURRIES INSIDE".center(80)
 		puts "GHOSTS FEAR THOSE WHO STAND BRAVELY!".center(80)
 	end
 end
 
 def inspect_fragment
-	traveler = @traveler.upcase
 	puts "It is an irregularly shaped stone fragment with carvings that read:"
-	puts "     ME #{traveler} YOU HAVE COME A LO"
+	puts "     ME #{@traveler} YOU HAVE COME A LO"
 	puts "     U CAN SOLVE THE PUZZLES O"
 	puts "      HT JUST ESCAPE... OR NOT. MUAHA"
 	puts "           IS 'QWERTY'!"
@@ -1333,10 +1198,6 @@ def put_final_room(object)
 		@in_hands.delete("disk")
 		@disk_inserted = 1
 		find_object(:computer).description = "An old computer with a floppy disk in it. It is still running"
-	elsif object == :fragment
-		puts "You walk over to the platform and put in the fragment."
-		@in_hands.delete("fragment")
-		@platform_fixed = 1
 	end
 end
 
@@ -1360,98 +1221,50 @@ def ghost_check
 					sleep(2)
 					puts "The ghost slowly fades away with a moan..."
 					@in_room.replace(["litlamp", "disk"])
-					@in_room.delete("ghost")
+					p @in_room
 					sleep(2)
 					puts "The lamp goes aflame as if by magic!"
-					puts "There is the sound of something plastic hitting the ground."
 				end
 	end
 end
 
-def abbrev_check(input)
-	if input != nil
-		if input.split.length == 2 
-			input1 = input.split[0]
-			input2 = input.split[1]
-		else
-			input1 = "garbage"
-			input2 = "garbage"
-		end
-		if @commands.any?  {|k, v| k == input1}
-			input1 = @commands[input1]
-		else 
-			input1 == "garbage"
-		end
-		if (input1 == "go" || input1 == "move") && @valid_move.any? {|k, v| k == input2}
-			input2 = @valid_move[input2]
-		elsif @object_list.any?  {|k, v| k == input2}
-			input2 = @object_list[input2]
-		else 
-			input2 = "garbage"
-		end
-	return input1 + " " + input2
-	end
-end
-
-
 def the_Darkness
 	if @in_hands.any? { |object| object =~ /lit.*/ } || @in_room.any? { |object| object =~ /lit.*/ }
-		@darkness_tries = 1
 	else
 		puts "\e[H\e[2J"
+		tries = 1
 		puts "All of your light is gone and you are lost in the Darkness!"
 		puts "Needless to say, this is not good..."
 		while true
 			input = gets
 			@input = input.chomp.downcase
-			@input = abbrev_check(@input)
-			if @darkness_tries == 20
+			if @in_hands.any? { |object| object =~ /lit.*/ } || @in_room.any? { |object| object =~ /lit.*/ }
+				inputs(@input)
+				break
+			elsif tries == 20
 				puts "Admit it, you are lost in the dark."
-				sleep(3)
+				sleep(5)
 				puts "You feel a ghostly chill as you drop to your knees in exhaustion."
 				exit
-			elsif @input == "inspect bag"
-				@scope_bag = 1; @scope_hands = 0; @scope_room = 0
-					if @in_bag.length == 0
-						puts "You feel nothing in your bag."
-					else
-						things = []
-						@in_bag.each {|object| things << find_object((object[/\D+/]).to_sym).name}
-						stuff_total = "You open the bag. You can feel a " + things.join(" and ") + " in your bag."
-						puts stuff_total.scan(/.{1,80}\W/).map(&:strip)
-					end
-			elsif @scope_bag == 1 && @input =~ /take.*/
-				puts "You feel around inside the bag..."
-				inputs(@input)
 			elsif @input == "light match" && @in_hands.any? { |object| object == "matchbox" }
 				inputs(@input)
-				@darkness_tries += 1
+				tries += 1
 			elsif @input == "light torch" && @in_hands.any? { |object| object == "matchbox" }
 				if rand < 0.5
 					puts "You fumble, but manage to find a match in the dark..."
 					inputs(@input)
-					if @in_hands.any? { |object| object =~ /lit.*/ } || @in_room.any? { |object| object =~ /lit.*/ }
-						puts  "You have found light!"
-						break
-					end
 				else
 					puts "You try to get a match but drop it in the dark."
 				end
-			elsif @valid_move.any? { |direction| @input == "move #{direction[1]}"} || @valid_move.any? { |direction| @input == "go #{direction[1]}"}
-				@darkness_tries += 1
-				if rand < 0.5
-					inputs(@input)
-					if @in_hands.any? { |object| object =~ /lit.*/ } || @in_room.any? { |object| object =~ /lit.*/ }
-						puts  "You have found light!"
-						break
+				elsif @valid_move.any? { |direction| @input == "move #{direction}"} || @valid_move.any? { |direction| @input == "go #{direction}"}
+					tries += 1
+					if rand < 0.5
+						inputs(@input)
+					else 
+						puts "You could not find your way in the dark."
 					end
-				else 
-					puts "You could not find your way in the dark."
-				end
-			elsif @input.match("garbage")
-				puts "Please enter a valid command."
 			else
-				@darkness_tries += 1
+				tries += 1
 				puts "It is too dark to see your hand in front of your face."
 			end
 		end
@@ -1531,5 +1344,6 @@ my_adventure = Adventure.new
 	
 
 
+#my_adventure.light_command(:torch)
+#my_adventure.light_command(:torch)
 my_adventure.intro
-#my_adventure.skip_intro
